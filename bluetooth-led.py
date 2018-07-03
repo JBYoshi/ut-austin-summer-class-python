@@ -2,6 +2,7 @@
 # '0' - light is off
 # '1' - light is on
 # Send '0' to turn the light off, '1' to turn it on
+# Send '?' to get the current state of the light
 # The RPi sends '0' when the light is off, '1' when the light is on
 
 from bluetooth import *
@@ -22,17 +23,13 @@ advertise_service(server_sock, 'JR',
 on = False
 gpioSlot = 18
 GPIO.setmode(GPIO.BCM)
-GPIO.setwarnings(false)
+GPIO.setwarnings(False)
 GPIO.setup(gpioSlot, GPIO.OUT)
 
 while True:
     print 'Waiting for connection on RFCOMM'
     client_sock, client_info = server_sock.accept()
     print 'Accepted connection from: ', client_info
-    if on:
-        client_sock.send('1')
-    else:
-        client_sock.send('0')
 
     try:
         data = client_sock.recv(1)
@@ -41,12 +38,16 @@ while True:
         if data == '1':
             on = True
             GPIO.output(gpioSlot, GPIO.HIGH)
-        else:
-            data = '0'
+            client_sock.send('1')
+        elif data == '0':
             on = False
             GPIO.output(gpioSlot, GPIO.LOW)
-        client_sock.send(data)
-        print 'sending [%s]' % data
+            client_sock.send('0')
+        elif data == '?':
+            if on:
+                client_sock.send('1')
+            else:
+                client_sock.send('0')
 
     except IOError:
         pass
